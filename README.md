@@ -26,7 +26,11 @@ Add your mail server to the _hosts_ file with its IP address (this is just an ex
 
     my.mail.server ansible_ssh_host=[IP address of the server]
 
-Edit the file `ansible/group_vars/all` to suit your needs (domain name, admin IP addresses, etc.)
+Edit the file `ansible/group_vars/all` to suit your needs:
+
+- change all the passwords to something different
+- set `ispmail_domain` to the first email domain you want to start with
+- set `ispmail_fqdn` to the fully-qualified domain name of the server. It is used for the URL of the webmail and rspamd interface.
 
 …and run:
 
