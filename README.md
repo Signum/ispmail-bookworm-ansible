@@ -8,29 +8,28 @@ room at https://riot.im/app/#/room/#ispmail:matrix.org
 
 # Usage
 
-## Run from your Linux laptop
+Prepare a (new) server with Debian Bullseye.
 
-Make sure you have Ansible and Git installed:
+Install Ansible and Git:
 
-    apt install git ansible
+    apt install ansible git
 
 Check that you can login to your new server as root:
 
-    ssh root@65.21.191.129
+    ssh root@[IP address of the server]
 
-Clone this repo to your local computer.
+Clone this Git repository to your local computer.
 
     git clone https://github.com/Signum/ispmail-bookworm-ansible.git
 
 Add your mail server to the _hosts_ file with its IP address (this is just an example):
 
-    my.mail.server ansible_ssh_host=65.21.191.129
+    my.mail.server ansible_ssh_host=[IP address of the server]
 
 Edit the file `ansible/group_vars/all` to suit your needs (domain name, admin IP addresses, etc.)
 
 …and run:
 
-    cd ispmail-bookworm-ansible/ansible
     ansible-playbook ispmail.yml -l my.mail.server
 
 At the end of the playbook you will get a report like:
@@ -56,18 +55,3 @@ Same as above. But run this command on the server:
 - Install all necessary packages and configure them 
 - Require and install a SSL certificate from Let's encrypt
 - Configure DKIM signing and provide you the public key
-
-# Vagrant
-
-Deploying a new VM or hardware server time and again to test these playbooks
-is tedious. A better way is to use Vagrant and VirtualBox. Install both
-and run…
-
-    vagrant up
-
-…from this repository. The ports of your mail server are mapped to localhost
-on your system. Check out the Vagrantfile to see the port mapping.
-
-# License
-
-Everything in this repository can be freely used under the terms of the MIT license.
