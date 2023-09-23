@@ -1,0 +1,92 @@
+---
+- name: Create the vmail group
+  group: name=vmail gid=5000
+- name: Create the vmail user
+  user: name=vmail uid=5000 group=vmail home=/var/vmail
+- name: Create mailbox directory
+  file: path=/var/vmail state=directory owner=vmail group=vmail
+- name: Copying SQL authentication configuration (auth-sql.conf.ext)
+  copy: src=10-auth.conf dest=/etc/dovecot/conf.d/10-auth.conf
+  notify: restart dovecot
+- name: Copying SQL authentication configuration (auth-sql.conf.ext)
+  copy: src=auth-sql.conf.ext dest=/etc/dovecot/conf.d/auth-sql.conf.ext
+  notify: restart dovecot
+- name: Copying mailbox and namespace configuration (10-mail.conf)
+  copy: src=10-mail.conf dest=/etc/dovecot/conf.d/10-mail.conf
+  notify: restart dovecot
+- name: Copying service configuration (10-master.conf)
+  copy: src=10-master.conf dest=/etc/dovecot/conf.d/10-master.conf
+  notify: restart dovecot
+- name: Copying SSL configuration (10-ssl.conf)
+  template: src=10-ssl.conf dest=/etc/dovecot/conf.d/10-ssl.conf
+  notify: restart dovecot
+- name: Set autoexpunge for Trash and Junk folders (15-mailboxes.conf)
+  copy: src=15-mailboxes.conf dest=/etc/dovecot/conf.d/15-mailboxes.conf
+  notify: restart dovecot
+- name: Copying LMTP configuration (20-lmtp.conf - enable sieve plugin)
+  copy: src=20-lmtp.conf dest=/etc/dovecot/conf.d/20-lmtp.conf
+  notify: restart dovecot
+- name: Copying IMAP configuration (20-imap.conf - enable quota and sieve plugin)
+  copy: src=20-imap.conf dest=/etc/dovecot/conf.d/20-imap.conf
+  notify: restart dovecot
+- name: Copying SQL access configuration (dovecot-sql.conf.ext)
+  template: src=dovecot-sql.conf.ext.j2 dest=/etc/dovecot/dovecot-sql.conf.ext
+  notify: restart dovecot
+- name: Fixing ownership and mode of dovecot.conf
+  file: path=/etc/dovecot/dovecot.conf group=vmail mode=0644
+  notify: restart dovecot
+- name: Fixing ownership and mode of dovecot-sql.conf.ext
+  file: path=/etc/dovecot/dovecot-sql.conf.ext owner=root group=root mode=0640
+  notify: restart dovecot
+
+- name: Copying Sieve plugin configuration (90-sieve.conf)
+  copy: src=90-sieve.conf dest=/etc/dovecot/conf.d/90-sieve.conf
+  notify: restart dovecot
+- name: Create directory for global sieve-after scripts
+  file: path=/etc/dovecot/sieve-after state=directory
+- name: Create global sieve-after script to send spam to its mail folder
+  copy: src=spam-to-folder.sieve dest=/etc/dovecot/sieve-after/spam-to-folder.sieve
+  #notify: recompile sieve scripts
+- name: Create sieve directory
+  file:
+    path: /etc/dovecot/sieve
+    state: directory
+- name: Copying Quota plugin configuration (90-quota.conf)
+  copy: src=90-quota.conf dest=/etc/dovecot/conf.d/90-quota.conf
+  notify: restart dovecot
+- name: Copying quota warning shell script to /usr/local/bin
+  template:
+    src: quota-warning.sh.j2
+    dest: /usr/local/bin/quota-warning.sh
+    mode: 0750
+  notify: restart dovecot
+- name: Copy learn sieve scripts
+  copy:
+    src: "{{item}}"
+    dest: "/etc/dovecot/sieve/{{item}}"
+  with_items:
+    - learn-ham.sieve
+    - learn-spam.sieve
+
+- name: Copy ham/spam learning scripts
+  copy:
+    src: "rspamd-learn-{{item}}.sh"
+    dest: "/etc/dovecot/sieve/rspamd-learn-{{item}}.sh"
+    owner: vmail
+    group: vmail
+    mode: 0700
+  with_items:
+    - ham
+    - spam
+
+- name: Flush handlers to restart Dovecot to enable Sieve plugins
+  meta: flush_handlers
+  
+- name: recompile sieve scripts
+  command:
+    cmd: "sievec /etc/dovecot/{{item}}.sieve"
+    creates: "/etc/dovecot/{{item}}.svbin"
+  with_items:
+    - sieve-after/spam-to-folder
+    - sieve/learn-ham
+    - sieve/learn-spam

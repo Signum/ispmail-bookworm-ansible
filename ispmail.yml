@@ -1,0 +1,73 @@
+---
+- hosts: all
+  tags: always
+  tasks:
+    - name: "Checking operating system version"
+      assert:
+        that: ansible_distribution_release == 'bookworm'
+        fail_msg: "This Ansible playbook is only supported on Debian Bookworm."
+        success_msg: "Debian Bookworm found. That makes me happy."
+
+
+- hosts: all
+  roles:
+    #- dumpvars
+    - role: ispmail-packages
+      tags: packages
+
+# Create random passwords
+# - hosts: all
+#   tasks:
+#     - command: pwgen -s 25
+#       register: ispmail_mysql_mailserver_password
+#     - set_fact:
+#         ispmail_mysql_mailserver_password: "{{ ispmail_mysql_mailserver_password.stdout }}"
+
+#     - command: pwgen -s 25
+#       register: ispmail_mysql_mailadmin_password
+#     - set_fact:
+#         ispmail_mysql_mailadmin_password: "{{ ispmail_mysql_mailadmin_password.stdout }}"
+
+#     - command: pwgen -s 25
+#       register: ispmail_mysql_root_password
+#     - set_fact:
+#         ispmail_mysql_root_password: "{{ ispmail_mysql_root_password.stdout }}"
+
+#     - command: pwgen -s 25
+#       register: ispmail_mysql_roundcube_password
+#     - set_fact:
+#         ispmail_mysql_roundcube_password: "{{ ispmail_mysql_roundcube_password.stdout }}"
+
+#     - command: pwgen -s 25
+#       register: ispmail_rspamd_web_password
+#     - set_fact:
+#         ispmail_rspamd_web_password: "{{ ispmail_rspamd_web_password.stdout }}"
+
+- hosts: all
+  roles:
+    - role: geerlingguy.certbot
+      tags: certbot
+    - role: ispmail-database
+      tags: database
+    - role: ispmail-postfix
+      tags: postfix
+    - role: ispmail-dovecot
+      tags: dovecot
+    - role: ispmail-webmail-apache-roundcube
+      tags: roundcube
+    - role: ispmail-rspamd
+      tags: rspamd
+
+- hosts: all
+  # tags: always
+  tasks:
+    - debug:
+        msg:
+          - "Installation complete."
+          - ""
+          - "Web mail URL:            https://{{ispmail_fqdn}}/"
+          - "Example email user:      john@{{ispmail_domain}}"
+          - "Example email password:  summersun"
+          - "Rspamd admin URL:        https://{{ispmail_fqdn}}/rspamd"
+          - "Rspamd admin password:   {{ispmail_rspamd_web_password}}"
+          - "DKIM public key :        {{dkim_public.stdout}}"

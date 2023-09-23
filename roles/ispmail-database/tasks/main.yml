@@ -1,0 +1,72 @@
+---
+- name: Installing required Python mysqldb module for Ansible to manage databases
+  apt:
+    name:
+      - python3-pymysql
+
+- name: creating mailserver MySQL database
+  mysql_db:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    name: mailserver
+  register: database
+  
+- name: Create and populate MySQL database
+  when: database.changed
+  block:
+    - name: copying MySQL database schema to server
+      copy:
+        src: schema.sql
+        dest: /tmp
+    - name: setting up SQL schema of mailserver database
+      mysql_db:
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        name: mailserver
+        state: import
+        target: /tmp/schema.sql
+    - name: creating MySQL user mailadmin
+      mysql_user:
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        name: mailadmin
+        password: "{{ispmail_mysql_mailadmin_password}}"
+        priv: mailserver.*:SELECT,INSERT,UPDATE,DELETE
+        host: localhost
+    - name: creating MySQL user to read the mailserver database
+      mysql_user:
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        name: mailserver
+        password: "{{ispmail_mysql_mailserver_password}}"
+        priv: mailserver.*:SELECT
+        host: 127.0.0.1
+    - name: Add MySQL example data
+      community.mysql.mysql_query:
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        login_db: mailserver
+        query:
+          - replace into `virtual_domains` (`id`, `name`) values (1, %s)
+        positional_args:
+          - "{{ispmail_domain}}"
+      when: ispmail_populate_test_data == true
+    - name: Add MySQL example data
+      community.mysql.mysql_query:
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        login_db: mailserver
+        query:
+          - replace into `virtual_users` (`id`, `domain_id`, `password`, `email`) values (%s, %s, %s, %s)
+        positional_args:
+          - 1
+          - 1
+          - "{BLF-CRYPT}$2y$05$m.GdQNMyUFNG0vPsaXxSB.0ZQqZhe1e9Un841oBcWi6U6HRF2Kmky"
+          - "john@{{ispmail_domain}}"
+      when: ispmail_populate_test_data == true
+    - name: Add MySQL example data
+      community.mysql.mysql_query:
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        login_db: mailserver
+        query:
+          - replace into `virtual_aliases` (`id`, `domain_id`, `source`, `destination`) values (%s, %s, %s, %s)
+        positional_args:
+          - 1
+          - 1
+          - "jack@{{ispmail_domain}}"
+          - "john@{{ispmail_domain}}"
+      when: ispmail_populate_test_data == true

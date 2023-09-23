@@ -1,0 +1,12 @@
+<?php
+// Plugin configuration for password
+// See /usr/share/roundcube/plugins/password/config.inc.php.dist for instructions
+// Check the access right of the file if you put sensitive information in it.
+$config['password_driver'] = 'sql';
+$config['password_minimum_length'] = 12;
+$config['password_force_save'] = true;
+$config['password_algorithm'] = 'blowfish-crypt';
+$config['password_algorithm_prefix'] = '{CRYPT}';
+$config['password_db_dsn'] = 'mysql://mailadmin:{{ispmail_mysql_mailadmin_password}}@localhost/mailserver';
+$config['password_query'] = "UPDATE virtual_users SET password=%P WHERE email=%u";
+?>

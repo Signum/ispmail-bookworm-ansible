@@ -1,0 +1,54 @@
+---
+# Set this to true to create a john@[your domain] account with password 'summersun'
+ispmail_populate_test_data: true
+
+### If you do not set the domain below then this playbook will
+### determine your public IP address and create a certificate for
+### ip.ad.dre.ess.nip.io. So by default you will get a working setup.
+ispmail_fqdn: bookworm.workaround.org
+
+# Domain for the mail addresses
+ispmail_domain : bookworm.workaround.org
+
+# DKIM selector for the domain. Must be all numeric but anything will do. Today's date is fine
+ispmail_dkim_selector : 20230619
+
+# MySQL password for read-only user
+ispmail_mysql_mailserver_password: ue4aizee5ameiz9hoo9aejaoxeiT1
+
+# MySQL password for read-write user
+ispmail_mysql_mailadmin_password: vaa4aGh1eu7eivewoh9aichei6ohk
+
+# MySQL password for administrative root user
+ispmail_mysql_root_password: Haongah1ohFushu6voo4sooyeo4ai
+
+# MySQL password for storing Roundcube configuration
+ispmail_mysql_roundcube_password: ChangeMeRound
+
+# Allowed authentication mechanisms for IMAP/POP3
+# See: https://wiki2.dovecot.org/Authentication/Mechanisms
+ispmail_dovecot_auth_mechanisms: plain login
+
+# The email address used for administrative purposes
+ispmail_postmaster_address: postmaster@example.com
+
+# Password for rspamd web interface authentication at
+# https://…/rspamd
+ispmail_rspamd_web_password: eiPh4yohghaequuviehiePoh5zeaj
+
+# tls_key: /etc/ssl/private/ssl-cert-snakeoil.key
+# tls_cert: /etc/ssl/certs/ssl-cert-snakeoil.pem
+tls_key: /etc/letsencrypt/live/{{ispmail_fqdn}}/privkey.pem
+tls_cert: /etc/letsencrypt/live/{{ispmail_fqdn}}/fullchain.pem
+
+certbot_create_if_missing: true
+certbot_create_standalone_stop_services:
+  - apache2
+  - dovecot
+  - postfix
+
+certbot_certs:
+  - email: "postmaster@{{ispmail_domain}}"
+    webroot: "/var/www/{{ispmail_fqdn}}"
+    domains:
+      - "{{ispmail_domain}}"

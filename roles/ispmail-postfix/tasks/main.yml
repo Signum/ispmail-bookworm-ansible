@@ -1,0 +1,85 @@
+---
+- name: define Postfix virtual mappings
+  template: 
+    src: "{{item}}.j2"
+    dest: "/etc/postfix/{{item}}"
+    mode: 0640
+  notify: restart postfix
+  with_items:
+  - mysql-virtual-mailbox-domains.cf
+  - mysql-virtual-mailbox-maps.cf
+  - mysql-virtual-alias-maps.cf
+  - mysql-email2email.cf
+
+- name: copy master.cf to enable submission service
+  copy:
+    src: master.cf
+    dest: /etc/postfix/master.cf
+    mode: 0644
+  notify: restart postfix
+
+- name: set local/canonical domain to 'localhost' to avoid name clashes
+  command: postconf mydestination=localhost
+
+- name: tell Postfix to use the virtual mailbox domain mapping
+  command: postconf virtual_mailbox_domains=mysql:/etc/postfix/mysql-virtual-mailbox-domains.cf
+
+- name: tell Postfix to use the virtual mailbox mapping
+  command: postconf virtual_mailbox_maps=mysql:/etc/postfix/mysql-virtual-mailbox-maps.cf
+
+- name: tell Postfix to use the email-to-email mapping
+  command: postconf virtual_alias_maps=mysql:/etc/postfix/mysql-virtual-alias-maps.cf,mysql:/etc/postfix/mysql-email2email.cf
+
+- name: Make Postfix use LMTP to send emails to Dovecot
+  command: postconf virtual_transport=lmtp:unix:private/dovecot-lmtp
+
+- name: Setting SMTP authentication type to dovecot
+  command: postconf smtpd_sasl_type=dovecot
+
+- name: Setting SMTP authentication path/socket
+  command: postconf smtpd_sasl_path=private/auth
+
+- name: Enabling SMTP authentication
+  command: postconf smtpd_sasl_auth_enable=yes
+
+- name: Setting SMTP encryption security level
+  command: postconf smtpd_tls_security_level=may
+
+- name: Setting SMTP encryption security level
+  command: postconf smtpd_tls_security_level=may
+
+- name: Enforce SMTP encryption
+  command: postconf smtpd_tls_auth_only=yes
+
+- name: Set TLS encryption certificate
+  command: postconf smtpd_tls_cert_file=/etc/letsencrypt/live/{{ispmail_fqdn}}/fullchain.pem
+
+- name: Set TLS encryption key
+  command: postconf smtpd_tls_key_file=/etc/letsencrypt/live/{{ispmail_fqdn}}/privkey.pem
+
+- name: Allow emails up to 40 MB large
+  command: postconf message_size_limit=41943040
+
+- name: Make Postfix listen on all interfaces
+  command: postconf inet_interfaces=all
+
+- name: Set rspamd milter for smtpd
+  command: postconf smtpd_milters=inet:127.0.0.1:11332
+
+- name: Set rspamd milter for local mails
+  command: postconf non_smtpd_milters=inet:127.0.0.1:11332
+
+- name: Set rspamd milter macros
+  command: postconf milter_mail_macros="i {mail_addr} {client_addr} {client_name} {auth_authen}'"
+
+- name: Enable user quota checking
+  command: "postconf 'smtpd_recipient_restrictions = reject_unauth_destination check_policy_service unix:private/quota-status'"
+
+- name: Enable rspamd milter for smtpd
+  command: "postconf smtpd_milters=inet:127.0.0.1:11332"
+
+- name: Enable rspamd milter for local mails
+  command: "postconf non_smtpd_milters=inet:127.0.0.1:11332"
+
+- name: Configure rspamd milter macros
+  command: "postconf milter_mail_macros='i {mail_addr} {client_addr} {client_name} {auth_authen}'"

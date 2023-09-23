@@ -1,0 +1,39 @@
+---
+- name: Remove all mails from john@example.org mailbox
+  file:
+    path: /var/vmail/example.org/john
+    state: absent
+
+- name: Check that all required TCP ports are responding
+  wait_for:
+    host: localhost
+    port: "{{ item }}"
+    state: started         # Port should be open
+    delay: 0               # No wait before first check (sec)
+    timeout: 3             # Stop checking after timeout (sec)
+  ignore_errors: yes
+  with_items:
+    - 443
+    - 80
+    - 143
+    - 110
+    - 25
+    - 587
+
+- name: Try sending an email to Postfix over SMTP
+  mail:
+    host: localhost
+    port: 25
+    to: John Smith <john@example.org>
+    subject: Ansible Test SMTP
+    body: System {{ ansible_hostname }} has been successfully provisioned.
+
+- name: Try sending an email to Postfix over Submission port
+  mail:
+    host: localhost
+    username: john@example.org
+    password: summersun
+    port: 587
+    to: John Smith <john@example.org>
+    subject: Ansible Test Submission
+    body: System {{ ansible_hostname }} has been successfully provisioned.

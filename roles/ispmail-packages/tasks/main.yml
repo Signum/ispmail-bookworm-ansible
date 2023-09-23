@@ -1,0 +1,32 @@
+---
+- name: install software packages
+  apt:
+    update_cache: yes
+    name:
+      - etckeeper
+      - certbot
+      - pwgen
+      - mariadb-server
+      - postfix
+      - postfix-mysql
+      # - roundcube
+      # - roundcube-mysql
+      # - roundcube-plugins
+      # - roundcube-plugins-extra
+      - swaks
+      - dovecot-mysql
+      - dovecot-pop3d
+      - dovecot-imapd
+      - dovecot-lmtpd
+      - dovecot-managesieved
+      - apache2
+      - php
+      - libapache2-mod-php
+      - adminer
+      - rspamd
+      - fail2ban
+      - ca-certificates
+      - mutt
+      - redis
+  notify: restart dovecot
+  

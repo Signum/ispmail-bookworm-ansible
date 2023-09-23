@@ -1,0 +1,61 @@
+---
+- name: Enable rspamd extended headers
+  copy:
+    src: milter_headers.conf
+    dest: /etc/rspamd/override.d/milter_headers.conf
+  notify: restart rspamd
+
+- name: Enable rspamd redis backend
+  copy:
+    src: redis.conf
+    dest: /etc/rspamd/override.d/redis.conf
+  notify: restart rspamd
+
+- name: Hash the rspamd web interface password
+  shell: "rspamadm pw -p {{ispmail_rspamd_web_password}}"
+  register: ispmail_rspamd_web_password_hashed
+  notify: restart rspamd
+
+- name: Set rspamd admin web interface password
+  template:
+    src: worker-controller.conf.j2
+    dest: /etc/rspamd/local.d/worker-controller.inc
+  notify: restart rspamd
+
+- name: Copy DKIM signing conf file
+  copy:
+    src: dkim_signing.conf
+    dest: /etc/rspamd/local.d/dkim_signing.conf
+
+- name: Create selector file
+  template:
+    src: dkim_selectors.map.j2
+    dest: /etc/rspamd/dkim_selectors.map
+  notify: restart rspamd
+
+- name: Create dkim directory
+  file: 
+    path: /var/lib/rspamd/dkim/
+    state: directory
+    mode: '0755'
+
+- name: Check if DKIM keys exist
+  stat:
+    path: /var/lib/rspamd/dkim/{{ispmail_domain}}.{{ispmail_dkim_selector}}.key
+  register: dkim_file
+
+- name: Handle DKIM keys if not already done
+  block: 
+    - name : Create DKIM keys
+      shell : rspamadm dkim_keygen -d {{ispmail_domain}} -s {{ispmail_dkim_selector}} -k /var/lib/rspamd/dkim/{{ispmail_domain}}.{{ispmail_dkim_selector}}.key
+      register: dkim_pub
+  
+    - name : Write public key
+      copy : 
+        content : "{{ dkim_pub.stdout }}"
+        dest: /var/lib/rspamd/dkim/{{ispmail_domain}}.{{ispmail_dkim_selector}}.pub
+  when : not dkim_file.stat.exists
+    
+- name: Get DKIM public key
+  shell : cat /var/lib/rspamd/dkim/{{ispmail_domain}}.{{ispmail_dkim_selector}}.pub
+  register : dkim_public

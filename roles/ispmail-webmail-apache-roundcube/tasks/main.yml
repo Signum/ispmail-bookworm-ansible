@@ -1,0 +1,105 @@
+---
+- name: install required binary packages
+  apt:
+    name: "{{ packages }}"
+    update_cache: yes
+  vars:
+    packages:
+      - roundcube
+      - roundcube-plugins
+      - roundcube-plugins-extra
+      - roundcube-mysql
+      - certbot
+      - python3-certbot-apache
+
+- name: Creating random des_key for Roundcube
+  shell: pwgen 24 1
+  register: roundcube_random_des_key
+- name: Deploying Roundcube configuration
+  template:
+    src: config.inc.php.j2
+    dest: /etc/roundcube/config.inc.php
+    owner: root
+    group: www-data
+    mode: 0640
+- name: Deploying Roundcube managesieve plugin configuration
+  template:
+    src: plugins/managesieve/config.inc.php.j2
+    dest: /etc/roundcube/plugins/managesieve/config.inc.php
+    owner: root
+    group: www-data
+    mode: 0640
+- name: Deploying Roundcube password plugin configuration
+  template:
+    src: plugins/password/config.inc.php.j2
+    dest: /etc/roundcube/plugins/password/config.inc.php
+    owner: root
+    group: www-data
+    mode: 0640
+- name: Copy ISPmail logo
+  copy:
+    src: ispmail-logo.png
+    dest: /var/lib/roundcube/skins/elastic/
+- name: Enable Apache rewrite and ssl module
+  shell: a2enmod {{item}}
+  args:
+    creates: /etc/apache2/mods-enabled/{{item}}.load
+  with_items:
+    - rewrite
+    - ssl
+  notify: restart apache
+- name: Create DocumentRoot for HTTP vhost
+  file:
+    path: /var/www/{{ispmail_fqdn}}
+    state: directory
+    owner: www-data
+    group: www-data
+- name: Remove Apache default vhost pointing to dummy page
+  file:
+    path: /etc/apache2/sites-enabled/000-default.conf
+    state: absent
+  notify: restart apache
+- name: Configure HTTP vhost
+  template:
+    src: vhosts/http.j2
+    dest: /etc/apache2/sites-available/{{ispmail_fqdn}}-http.conf
+  notify: restart apache
+- name: Enable HTTP vhost
+  shell: a2ensite {{ispmail_fqdn}}-http.conf
+  args:
+    creates: /etc/apache2/sites-enabled/{{ispmail_fqdn}}-http.conf
+  notify: restart apache
+  
+- name: Create certificate for this site
+  shell: certbot -a apache --non-interactive --apache-le-vhost-ext "s.conf" --agree-tos --register-unsafely-without-email --domains {{ispmail_fqdn}}
+  args:
+    creates: /etc/letsencrypt/live/{{ispmail_fqdn}}/fullchain.pem
+  
+- name: Configure HTTPS vhost
+  template:
+    src: vhosts/https.j2
+    dest: /etc/apache2/sites-available/{{ispmail_fqdn}}-https.conf
+  notify: restart apache
+- name: Enable HTTPS vhost
+  shell: a2ensite {{ispmail_fqdn}}-https.conf
+  args:
+    creates: /etc/apache2/sites-enabled/{{ispmail_fqdn}}-https.conf
+  notify: restart apache
+
+- name: Enable Apache mod_proxy for rspamd admin web interface
+  command:
+    cmd: a2enmod proxy_http
+    creates: /etc/apache2/mods-enabled/proxy_http.load
+  notify: restart apache
+
+- name: Create directory for XML auto-configuration
+  file:
+    path: /var/www/html/autoconfig-mail
+    state: directory
+    owner: www-data
+    group: www-data
+
+- name: Create auto-configuration XML file
+  template:
+    src: autoconfig.j2
+    dest: /var/www/html/autoconfig-mail/config-v1.1.xml

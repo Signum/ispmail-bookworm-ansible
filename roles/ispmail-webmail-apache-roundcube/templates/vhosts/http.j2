@@ -1,0 +1,8 @@
+<VirtualHost *:80>
+  ServerName {{ispmail_fqdn}}
+  DocumentRoot /var/www/{{ispmail_fqdn}}
+
+  RewriteEngine On
+  RewriteCond %{REQUEST_URI} !\.well-known/acme-challenge
+  RewriteRule ^(.*)$ https://%{SERVER_NAME}$1 [R=301,L]
+</VirtualHost>

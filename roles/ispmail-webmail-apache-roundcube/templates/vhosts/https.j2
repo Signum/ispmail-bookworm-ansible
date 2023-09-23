@@ -1,0 +1,29 @@
+<VirtualHost *:443>
+  ServerName {{ispmail_fqdn}}
+  DocumentRoot /var/lib/roundcube/public_html
+  # Roundcube
+  Include /etc/roundcube/apache.conf
+
+  # Adminer
+  Alias /adminer /usr/share/adminer/adminer
+  <Directory /usr/share/adminer/adminer>
+    Options Indexes FollowSymLinks
+    AllowOverride None
+  </Directory>
+
+
+  # Mail client auto-configuration
+  Alias /.well-known/autoconfig/mail /var/www/html/autoconfig-mail
+
+  <Location /rspamd>
+    Options Indexes FollowSymLinks
+    AllowOverride None
+  </Location>
+  RewriteEngine on
+  RewriteRule ^/rspamd$ /rspamd/ [R,L]
+  RewriteRule ^/rspamd/(.*) http://localhost:11334/$1 [P,L]
+
+  SSLEngine on
+  SSLCertificateKeyFile {{tls_key}}
+  SSLCertificateFile {{tls_cert}}
+</VirtualHost>
