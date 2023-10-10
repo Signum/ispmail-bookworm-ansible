@@ -8,7 +8,7 @@ room at https://riot.im/app/#/room/#ispmail:matrix.org
 
 # Usage
 
-Prepare a (new) server with Debian Bullseye.
+Prepare a (new) server with Debian Bookworm.
 
 Install Ansible and Git:
 
