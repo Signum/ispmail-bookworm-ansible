@@ -1,0 +1,66 @@
+# {{ ansible_managed }}
+#
+namespace inbox {
+  type = private
+  separator = .
+  inbox = yes
+  mailbox Drafts {
+    special_use = \Drafts
+    auto = subscribe
+  }
+
+  mailbox Junk {
+    special_use = \Junk
+    auto = create
+    autoexpunge = 30d
+  }
+
+  mailbox spam {
+    special_use = \Junk
+    auto = no
+    autoexpunge = 30d
+  }
+
+  mailbox Spam {
+    special_use = \Junk
+    auto = no
+    autoexpunge = 30d
+  }
+
+  mailbox Trash {
+    special_use = \Trash
+    auto = subscribe
+    autoexpunge = 30d
+  }
+
+  mailbox TRASH {
+    special_use = \Trash
+    auto = no
+    autoexpunge = 30d
+  }
+
+  mailbox Sent {
+    special_use = \Sent
+    auto = subscribe
+  }
+
+  mailbox "Sent Mail" {
+    special_use = \Sent
+    auto = no
+  }
+
+  mailbox "Sent Messages" {
+    special_use = \Sent
+    auto = no
+  }
+
+  mailbox Archive {
+    special_use = \Archive
+    auto = create
+  }
+
+  mailbox "Archives" {
+    special_use = \Archive
+    auto = no
+  }
+}
