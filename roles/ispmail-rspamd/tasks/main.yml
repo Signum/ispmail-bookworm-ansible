@@ -59,3 +59,10 @@
 - name: Get DKIM public key
   shell : cat /var/lib/rspamd/dkim/{{ispmail_domain}}.{{ispmail_dkim_selector}}.pub
   register : dkim_public
+
+- name: Change permissions on /var/lib/rspamd/dkim/
+  file:
+    path: /var/lib/rspamd/dkim
+    owner: _rspamd 
+    group: _rspamd
+    recurse: true
