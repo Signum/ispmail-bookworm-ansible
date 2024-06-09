@@ -151,3 +151,5 @@ user_query = SELECT email as user, \
   5000 AS uid, 5000 AS gid \
   FROM virtual_users WHERE email='%u';
 password_query = SELECT password FROM virtual_users WHERE email='%u';
+iterate_query = SELECT email AS user FROM virtual_users
+
