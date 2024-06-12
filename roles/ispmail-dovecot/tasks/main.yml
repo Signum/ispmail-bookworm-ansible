@@ -20,8 +20,8 @@
 - name: Copying SSL configuration (10-ssl.conf)
   template: src=10-ssl.conf dest=/etc/dovecot/conf.d/10-ssl.conf
   notify: restart dovecot
-- name: Set autoexpunge for Trash and Junk folders (15-mailboxes.conf)
-  copy: src=15-mailboxes.conf dest=/etc/dovecot/conf.d/15-mailboxes.conf
+- name: configure 15-mailboxes.conf
+  template: src=15-mailboxes.conf.j2 dest=/etc/dovecot/conf.d/15-mailboxes.conf owner=vmail group=dovecot mode=0440
   notify: restart dovecot
 - name: Copying LMTP configuration (20-lmtp.conf - enable sieve plugin)
   copy: src=20-lmtp.conf dest=/etc/dovecot/conf.d/20-lmtp.conf
